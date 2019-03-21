@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="Mundo Wumpus">
+    <meta name="keywords" content="Wumpus, AI, Artificial Intelligence">
+    <meta name="author" content="Randy Quindai">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Mundo Wumpus</title>
+</head>
+<!-- https://arc.cs.rutgers.edu/courses/s18/lecture.08.pdf 
+	 https://katie.mtech.edu/classes/csci135/assign/wumpus2/ -->
+<body>
+	<!--
+	<h5>Randy Quindai<br>Teoria dos Jogos (Mundo Wumpus) - 2019<br>Prof. Roberta</h5>
+-->
+	<button onclick="agentGoForGold()">Proximo Movimento</button>
+	<script>
+		 let grid = [['A',-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
+		 let gridClueGlitter = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
+		 let gridClueBreeze = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
+		 let gridClueStench = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
+		 let glitterLocation;
+		 let percepts;
+		 let Agent;
+		 let score = 0;
+		 var worldMap = document.createElement('p');
+		 var breezMap = document.createElement('p');
+		 var stenchMap = document.createElement('p');
+		 var glitterMap = document.createElement('p');
+		 var scoreShow = document.createElement('p');
+		 //description
+		 /*
+		 	A : archer - player
+		 	W : wumpus
+		 	P : Pit - buraco (20% of rooms are pits)
+		 	G : Gold - ouro
+		 	B : Breeze - briza
+		 	S : Stench - fedor
+		 */
+
+		 // Start Game
+		 document.body.appendChild(scoreShow);
+		 document.body.appendChild(worldMap);
+		 document.body.appendChild(breezMap);
+		 document.body.appendChild(stenchMap);
+		 document.body.appendChild(glitterMap);
+		 generateWorld();
+
+		 //agentGoForGold();
+
+		 function agentGoForGold(){
+		 	scoreShow.innerHTML = "Score: "+ score + "<br>"+
+	 					"Percepts: "+ percepts;
+		 }
+
+
+		 function generateWorld(){
+		 	/** Generates
+			 	Only one wumpus - Apenas um wumpus
+			 	Only one gold - Apenas um ouro
+			 	Many pits in random rooms - vários buracos em posições aleatórias
+			 	gen: generated number
+		 	*/
+		 	let clues = [];
+		 	let gen;
+
+		// gera wumpus
+		 	gen = posVectorToPosMat (Math.floor(Math.random() * 15) + 1); // returns a random integer from 1 to 15 
+		 	grid[gen.i][gen.j] = "W";
+		 	clues.push(	{x:gen.i-1, y:gen.j} ); //up
+		 	clues.push( {x:gen.i+1, y:gen.j} ); //down
+	 		clues.push( {x:gen.i, y:gen.j+1} ); //right
+	 		clues.push( {x:gen.i, y:gen.j-1} ); //left
+
+		 	// coloca dicas(fedor) para o wumpus
+		 	//if ( (gen.i-1) >= 0 && ((gen.i-1) < 4) && (gen.j >= 0) && ((gen.j+1) >= 0) )
+		 	clues.map(c => {
+		 		if (c.x >= 0 && c.x < 4 && c.y >= 0 && c.y < 4) // if is a valid position
+		 			gridClueStench[c.x][c.y] = "S";
+		 	});
+
+		// gera ouro
+			glitterLocation = posVectorToPosMat (Math.floor(Math.random() * 15) + 1); // returns a random integer from 
+			gridClueGlitter[glitterLocation.i][glitterLocation.j] = "G";
+
+		// gera buracos
+		 	let i = 0; clues = [];
+		 	while(i < 3){
+		 		gen = posVectorToPosMat (Math.floor(Math.random() * 15) + 1); // returns a random integer from 1 to 15
+
+		 		if (grid[gen.i][gen.j] != "W" && grid[gen.i][gen.j] != "P" && grid[gen.i][gen.j] != "G"){ //guarantees 20% of Pits
+		 			grid[gen.i][gen.j] = "P";
+		 			++i;
+		 		}
+
+		 		clues.push(	{x:gen.i-1, y:gen.j} ); //up
+			 	clues.push( {x:gen.i+1, y:gen.j} ); //down
+		 		clues.push( {x:gen.i, y:gen.j+1} ); //right
+		 		clues.push( {x:gen.i, y:gen.j-1} ); //left
+
+		 		clues.map(c => {
+		 		if (c.x >= 0 && c.x < 4 && c.y >= 0 && c.y < 4) {// if is a valid position
+		 			if (grid[c.x][c.y] != "P") // ensures that a room with hole will not have a breeze
+		 				gridClueBreeze[c.x][c.y] = "B";
+		 		}
+		 		});
+		 	}
+		 	
+
+		 	escreveWorldStatus()
+
+		 }
+
+		function escreveGrid(tabuleiro, mygrid, title){
+				tabuleiro.innerHTML = title+'<br>';
+				for(i = 0; i<4; ++i){
+					for(j = 0; j<4; ++j){
+						tabuleiro.innerHTML += "  "+ mygrid[i][j] +"   |";
+					}
+					tabuleiro.innerHTML += '<br>';
+					for(j = 0; j<4; ++j){
+						tabuleiro.innerHTML += "----"
+						if (j <= 2) tabuleiro.innerHTML += "|";
+					}
+					tabuleiro.innerHTML += '<br>';
+				}
+			}
+
+		function escreveWorldStatus(){
+			escreveGrid(worldMap, grid, "Mapa do Mundo");
+			escreveGrid(breezMap, gridClueBreeze, "Mapeamento das brizas");
+			escreveGrid(stenchMap, gridClueStench, "Mapeamento do fedor");
+			escreveGrid(glitterMap, gridClueGlitter, "Localizacao do ouro");
+
+		}
+
+		function log2(n) 
+		{ 
+		  return (n==1)? 0 : 1 + log2(n/2); 
+		}
+
+		function matToVector(b){
+			let v = [];
+			for( i = 0; i < 4; ++i ) 
+					for (j = 0; j < 4; ++j)
+						v[i*4 + j] = auxTab[i][j];
+			return v;
+		}
+
+		function posVectorToPosMat(num){
+			for( i = 0; i < 4; ++i ) 
+				for (j = 0; j < 4; ++j)
+					if((i*4 +j) == num) return{i,j};
+		}
+	</script>
+</body>
+</html>
