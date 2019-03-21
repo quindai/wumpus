@@ -7,6 +7,11 @@
     <meta name="author" content="Randy Quindai">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Mundo Wumpus</title>
+	<style type="text/css" media="screen">
+		#line1{
+			float: left;
+		}
+	</style>
 </head>
 <!-- https://arc.cs.rutgers.edu/courses/s18/lecture.08.pdf 
 	 https://katie.mtech.edu/classes/csci135/assign/wumpus2/ -->
@@ -14,7 +19,9 @@
 	<!--
 	<h5>Randy Quindai<br>Teoria dos Jogos (Mundo Wumpus) - 2019<br>Prof. Roberta</h5>
 -->
-	<button onclick="agentGoForGold()">Proximo Movimento</button>
+	<button onclick="agentGoForGold()">Proximo Movimento</button><br>
+	<p id="score">Score: 0 <br>Percepts: None<br><br></p>
+	<div id="line1"></div>
 	<script>
 		 let grid = [['A',-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
 		 let gridClueGlitter = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
@@ -22,13 +29,15 @@
 		 let gridClueStench = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
 		 let glitterLocation;
 		 let percepts;
-		 let Agent;
+		 let steps = [];
+		 let agent = {gold: false, deadWumpus: false, shot: true};
 		 let score = 0;
 		 var worldMap = document.createElement('p');
 		 var breezMap = document.createElement('p');
 		 var stenchMap = document.createElement('p');
 		 var glitterMap = document.createElement('p');
-		 var scoreShow = document.createElement('p');
+		 var fixSpace = document.createElement('p');
+		 var scoreShow = document.getElementById("score");
 		 //description
 		 /*
 		 	A : archer - player
@@ -40,18 +49,21 @@
 		 */
 
 		 // Start Game
-		 document.body.appendChild(scoreShow);
-		 document.body.appendChild(worldMap);
-		 document.body.appendChild(breezMap);
+		 document.body.appendChild(fixSpace);
+		 document.getElementById("line1").appendChild(worldMap);
+		 document.getElementById("line1").appendChild(breezMap);
 		 document.body.appendChild(stenchMap);
 		 document.body.appendChild(glitterMap);
 		 generateWorld();
-
 		 //agentGoForGold();
 
 		 function agentGoForGold(){
+		 	if( steps.length == 1 )
+		 	--score;
 		 	scoreShow.innerHTML = "Score: "+ score + "<br>"+
-	 					"Percepts: "+ percepts;
+	 					"Percepts: "+ percepts + "<br>"+
+	 					"Last Action: ... <br>"+
+	 					JSON.stringify(agent)+"<br><br>";
 		 }
 
 
@@ -64,7 +76,7 @@
 		 	*/
 		 	let clues = [];
 		 	let gen;
-
+		 	steps.push({x:0, y:0});
 		// gera wumpus
 		 	gen = posVectorToPosMat (Math.floor(Math.random() * 15) + 1); // returns a random integer from 1 to 15 
 		 	grid[gen.i][gen.j] = "W";
