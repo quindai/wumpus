@@ -29,8 +29,9 @@
 		 let gridClueStench = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
 		 let glitterLocation;
 		 let percepts;
-		 let steps = [];
-		 let agent = {gold: false, deadWumpus: false, shot: true};
+		 let steps = [{x:0, y:0}]; // init Archer position
+		 // dir = orientation : 0, 90 180, 270
+		 let agent = {gold: false, deadWumpus: false, shot: true, dir: 0};
 		 let score = 0;
 		 var worldMap = document.createElement('p');
 		 var breezMap = document.createElement('p');
@@ -58,12 +59,20 @@
 		 //agentGoForGold();
 
 		 function agentGoForGold(){
-		 	if( steps.length == 1 )
-		 	--score;
+		 	if(steps.length == 1 && !agent.gold){
+			 	grid[0][1] = "A"
+			 	grid[steps[0].x][steps[0].y] = 1;
+			 	steps.push({x:0, y:1});
+			 	--score;
+			}
+		 	//if(gridClueStench[steps.x][steps.y] == "S")
+		 	
 		 	scoreShow.innerHTML = "Score: "+ score + "<br>"+
 	 					"Percepts: "+ percepts + "<br>"+
 	 					"Last Action: ... <br>"+
 	 					JSON.stringify(agent)+"<br><br>";
+
+	 		escreveWorldStatus();
 		 }
 
 
@@ -76,7 +85,6 @@
 		 	*/
 		 	let clues = [];
 		 	let gen;
-		 	steps.push({x:0, y:0});
 		// gera wumpus
 		 	gen = posVectorToPosMat (Math.floor(Math.random() * 15) + 1); // returns a random integer from 1 to 15 
 		 	grid[gen.i][gen.j] = "W";
