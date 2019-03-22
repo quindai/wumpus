@@ -14,7 +14,8 @@
 	</style>
 </head>
 <!-- https://arc.cs.rutgers.edu/courses/s18/lecture.08.pdf 
-	 https://katie.mtech.edu/classes/csci135/assign/wumpus2/ -->
+	 https://katie.mtech.edu/classes/csci135/assign/wumpus2/ 
+	 https://github.com/logicxd/Wumpus-World-AI -->
 <body>
 	<!--
 	<h5>Randy Quindai<br>Teoria dos Jogos (Mundo Wumpus) - 2019<br>Prof. Roberta</h5>
@@ -29,10 +30,11 @@
 		 let gridClueBreeze = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
 		 let gridClueStench = [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]];
 		 let glitterLocation;
-		 let percepts;
+		 let percepts = [];
+		 let action = [];
 		 let steps = [{x:0, y:0}]; // init Archer position
 		 // dir = orientation : 0, 90 180, 270
-		 let agent = {gold: false, deadWumpus: false, shot: true, dir: 0};
+		 let agent = {gold: false, deadWumpus: false, shot: true, dir: []};
 		 let score = 0;
 		 let gameIsOver = false;
 		 var worldMap = document.createElement('p');
@@ -61,54 +63,151 @@
 		 //agentGoForGold();
 
 		 function agentGoForGold(){
-		 	if (!gameIsOver){
+		 	//debugger;
+		 	if (gameIsOver == false){
 		 		if(steps.length == 1 && !agent.gold){
 			 	// first step random
+			 		updatePercepts();
 			 		let aux = (Math.floor(Math.random()*2) == 0 ? {x:0, y:1}:{x:1,y:0});
 				 	grid[aux.x][aux.y] = "A";
 				 	grid[steps[0].x][steps[0].y] = 1;
 				 	steps.push({x:aux.x, y:aux.y});
 				 	--score;
-				} else{
+				 	updateActions();
+				} else{ // next moves
+					updatePercepts();
+					if (!agent.gold){
+						debugger;
+						let auxL = steps.length-1;
+						do{
 
+							let xmax = (steps[auxL].x+1 < 3 ? steps[auxL].x+2:steps[auxL].x+1);
+							let xmin = (steps[auxL].x-1 < 0 ? 0: steps[auxL].x-1);
+
+							mx = Math.floor(Math.random() * (xmax - xmin ) ) + xmin;
+
+							let ymax = (steps[auxL].y+1 < 3 ? steps[auxL].y+2:steps[auxL].y+1);
+							let ymin = (steps[auxL].y-1 < 0 ? 0: steps[auxL].y-1);
+
+							my = Math.floor(Math.random() * (ymax - ymin ) ) + ymin;
+						} while((mx == steps[auxL].x && my == steps[auxL].y) || !validMove(mx,my));
+
+						grid[mx][my] = "A";
+						grid[steps[auxL].x][steps[auxL].y] = 1;
+						steps.push({x:mx, y:my});
+						--score;
+						updateActions();
+					}
 				}
-			 	
-			 	
-			 	scoreShow.innerHTML = "Score: "+ score + "<br>"+
-		 					"Percepts: "+ percepts + "<br>"+
-		 					"Last Action: ... <br>"+
-		 					JSON.stringify(agent)+"<br><br>";
+			 			 	
+			 	showScoreOnScreen();
 
 		 		escreveWorldStatus();
 		 		checkStatus();
 		 	} else {
-		 		alert("Jogo terminou!");
+		 		let msg = "Jogo terminou!";
+		 		if (!agent.gold) msg += "\nAgente morreu!";
+		 		else msg += "\nAgente saiu da caverna com o ouro!";
+		 		msg += "\nSua pontuacao: "+ score;
+		 		alert(msg);
 		 	}
 		 	
 		 }
 
 		 function checkStatus(){
-		 	let curr = steps[steps.length-1];
+		 //debugger;	
+		 	if( steps.length>0){
+			 	let curr = steps[steps.length-1];
 
-		 	if (gridAux[curr.x][curr.y] == "P" || gridAux[curr.x][curr.y] == "W"){
-		 		score -= 1000;
+			 	if (gridAux[curr.x][curr.y] == "P" || gridAux[curr.x][curr.y] == "W"){
+			 		score -= 1000;
+			 		gameIsOver = true;
+		 		}
+		 	}
+
+		 	if ((steps.length) == 0 && (agent.gold==true)){ //jogo acabou
 		 		gameIsOver = true;
 		 	}
 
-		 	if (gridClueStench[curr.x][curr.y] != -1 )
-		 		percepts.push( "Stench" );
-		 	if ( gridClueBreeze[curr.x][curr.y] != -1 )
-		 		percepts.push( "Breeze" );
-		 	if (gridClueGlitter[curr.x][curr.y] != -1 )
-		 		percepts.push( "Gold" );
-		 	
+//debugger;
+		 	if (agent.gold && steps.length > 1){
+		 		while(percepts.includes("Gold"))
+		 			percepts.pop();
+
+		 		let ant = steps.pop();
+		 		let aux = steps.pop();
+		 		grid[ant.x][ant.y] = 1;
+		 		grid[aux.x][aux.y] = "A";
+		 		--score;
+		 	}
+
+		 	if (percepts.includes("Gold")){ // refaz caminho de volta
+		 		agent.gold = true;
+		 		score += 1000;
+		 		action.push("PEGOU O OURO");
+		 		//percepts.pop();	 		
+		 	}
+
+		 	showScoreOnScreen();
+		 	escreveWorldStatus();
+		 }
+
+		 function showScoreOnScreen(){
 		 	scoreShow.innerHTML = "Score: "+ score + "<br>"+
 		 					"Percepts: "+ percepts + "<br>"+
-		 					"Ultima Acao: ... <br>"+
+		 					"Ultima Acao: "+ action +"<br>"+
 		 					"Jogo Rodando: "+ !gameIsOver +"<br>"+
-		 					JSON.stringify(agent)+"<br><br>";
-		 	escreveWorldStatus();
+		 					"Agente: "+JSON.stringify(agent)+"<br><br>";
+		 }
 
+		 function updatePercepts(){
+		 	if (steps.length>1){
+			 	let curr = steps[steps.length-1];
+			 	if (gridClueStench[curr.x][curr.y] != -1 )
+			 		percepts.push( "Stench" );
+			 	if ( gridClueBreeze[curr.x][curr.y] != -1 )
+			 		percepts.push( "Breeze" );
+			 	if (gridClueGlitter[curr.x][curr.y] != -1 )
+			 		percepts.push( "Gold" );
+			}
+		 }
+
+		 function updateActions(){
+		 	let aux = steps.length-1;
+		 	if (steps[aux-1].x == steps[aux].x && steps[aux-1].y+1 == steps[aux].y) { //right
+		 		action.push("MOVEU DIREITA");
+		 		agent.dir.push("0");
+		 	}
+		 	if (steps[aux-1].x == steps[aux].x && steps[aux-1].y-1 == steps[aux].y) { //left
+		 		action.push("MOVEU ESQUERDA");
+		 		agent.dir.push("180");
+		 	}
+		 	if (steps[aux-1].y == steps[aux].y && steps[aux-1].x+1 == steps[aux].x) { //down
+		 		action.push("MOVEU BAIXO");
+		 		agent.dir.push("270");
+		 	}
+		 	if (steps[aux-1].y == steps[aux].y && steps[aux-1].x-1 == steps[aux].x) { //up
+		 		action.push("MOVEU CIMA");
+		 		agent.dir.push("90");
+		 	}
+		 }
+
+		 function validMove(x, y){
+		 	let aux = steps.length-1;
+		 	if (steps[aux].x == x && steps[aux].y+1 == y) { //right
+		 		return true;
+		 	}
+		 	if (steps[aux].x == x && steps[aux].y-1 == y) { //left
+		 		return true;
+		 	}
+		 	if (steps[aux].y == y && steps[aux].x+1 == x) { //down
+		 		return true;
+		 	}
+		 	if (steps[aux].y == y && steps[aux].x-1 == x) { //up
+		 		return true;
+		 	}
+
+		 	return false;
 		 }
 
 		 function generateWorld(){
